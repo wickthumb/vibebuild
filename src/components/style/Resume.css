@@ -1,0 +1,46 @@
+/* Resume component styles */
+
+.resume-content {
+  scrollbar-width: thin;
+  scrollbar-color: #7b42f6 #1a1a2e;
+  padding-left: 8px !important;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 16px;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 10px;
+  width: 1px;
+  background: rgba(123, 66, 246, 0.5);
+  z-index: 1;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 32px;
+  margin-bottom: 24px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+/* Media queries */
+@media (max-width: 480px) {
+  .timeline::before {
+    left: 5px;
+  }
+} 
