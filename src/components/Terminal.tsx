@@ -52,6 +52,7 @@ const Terminal = ({ activeColor }: TerminalProps) => {
   const [showTetris, setShowTetris] = useState(false);
   const [showSnake, setShowSnake] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
+  const [snakeMode, setSnakeMode] = useState<"normal" | "neural">("normal");
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when terminal content changes
@@ -182,38 +183,22 @@ const Terminal = ({ activeColor }: TerminalProps) => {
 
   // Process the entered command
   const processCommand = () => {
-    const command = currentInput.trim();
+    const trimmedInput = currentInput.trim();
+    if (trimmedInput === "") return;
 
-    if (command) {
-      // Add to command history
-      setCommandHistory((prev) => [command, ...prev]);
-      setHistoryIndex(-1);
+    // Add command to history
+    setCommandHistory((prev) => [...prev, trimmedInput]);
+    setHistoryIndex(-1);
 
-      // Add command to terminal output
-      setTerminalText((prev) => prev + getPrompt() + " " + command + "\n");
+    // Display command in terminal
+    setTerminalText((prev) => prev + `${getPrompt()} ${trimmedInput}\n`);
 
-      // Process the command
-      executeCommand(command);
+    // Process command
+    const [command, ...args] = trimmedInput.split(" ");
 
-      // Clear current input
-      setCurrentInput("");
-    } else {
-      // Just add a new prompt if empty command
-      setTerminalText((prev) => prev + getPrompt() + "\n");
-    }
-  };
-
-  // Execute the command
-  const executeCommand = (command: string) => {
-    const parts = command.split(" ");
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
-
-    switch (cmd) {
-      case "help":
-        showHelp();
-        break;
+    switch (command.toLowerCase()) {
       case "ls":
+      case "dir":
         listDirectory();
         break;
       case "cd":
@@ -232,24 +217,24 @@ const Terminal = ({ activeColor }: TerminalProps) => {
         launchTetris();
         break;
       case "snake":
-        launchSnake();
+        launchSnake("neural");
         break;
       case "memory":
         launchMemory();
         break;
-      case "games":
-        listGames();
+      case "help":
+        showHelp();
         break;
-      case "run":
-        runExecutable(args[0]);
+      case "exit":
+        clearTerminal();
         break;
       default:
-        setTerminalText(
-          (prev) =>
-            prev +
-            `Command not found: ${cmd}. Type 'help' for available commands.\n`
-        );
+        runExecutable(command);
+        break;
     }
+
+    // Clear input
+    setCurrentInput("");
   };
 
   // Show help information
@@ -257,18 +242,18 @@ const Terminal = ({ activeColor }: TerminalProps) => {
     setTerminalText(
       (prev) =>
         prev +
-        `Available commands:
-  help                 - Show this help message
-  ls                   - List directory contents
-  cd <directory>       - Change directory
-  pwd                  - Print working directory
-  cat <file>           - Display file contents
-  clear                - Clear terminal
-  games                - List available games
-  tetris               - Launch Tetris game
-  snake                - Launch Snake game
-  memory               - Launch Memory game
-  run <executable>     - Run an executable file
+        `
+Available commands:
+  ls, dir                  - List files in current directory
+  cd <directory>           - Change directory
+  pwd                      - Print working directory
+  cat <file>               - Display file contents
+  clear                    - Clear terminal
+  tetris                   - Launch Tetris game
+  snake                    - Launch Snake game with Neural Network mode
+  memory                   - Launch Memory game
+  help                     - Show this help message
+  exit                     - Close terminal
 `
     );
   };
@@ -280,7 +265,7 @@ const Terminal = ({ activeColor }: TerminalProps) => {
         prev +
         `Available games:
   tetris               - Classic block stacking game
-  snake                - Control a snake to eat food and grow
+  snake                - Control a snake with Neural Network AI
   memory               - Match pairs of cards
   
 You can launch games by typing their name or using 'run /path/to/game.exe'
@@ -431,8 +416,11 @@ You can launch games by typing their name or using 'run /path/to/game.exe'
   };
 
   // Launch Snake game
-  const launchSnake = () => {
-    setTerminalText((prev) => prev + `Launching Snake...\n`);
+  const launchSnake = (mode: "normal" | "neural" = "neural") => {
+    setTerminalText(
+      (prev) => prev + `Launching Snake with Neural Network mode...\n`
+    );
+    setSnakeMode(mode);
     setShowSnake(true);
   };
 
@@ -493,15 +481,17 @@ You can launch games by typing their name or using 'run /path/to/game.exe'
       <div
         style={{
           backgroundColor: theme.colors.backgroundDark,
-          border: `${theme.borders.width.medium} ${theme.borders.style.solid} ${theme.colors.accent3}`,
+          border: `${theme.borders.width.medium} ${theme.borders.style.solid} ${
+            theme.colors[activeColor as keyof typeof theme.colors]
+          }`,
           borderRadius: theme.borders.radius.md,
-          padding: theme.spacing.lg,
-          boxShadow: theme.shadows.neon.purple,
-          fontFamily: theme.fonts.family.main,
-          fontSize: theme.fonts.size.lg,
-          position: "relative",
+          padding: theme.spacing.md,
           height: "100%",
-          minHeight: "250px",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          boxShadow:
+            theme.shadows.neon[activeColor as keyof typeof theme.shadows.neon],
         }}
       >
         <div
@@ -566,7 +556,9 @@ You can launch games by typing their name or using 'run /path/to/game.exe'
 
       {/* Render game components when active */}
       {showTetris && <Tetris isActive={showTetris} onClose={closeTetris} />}
-      {showSnake && <Snake isActive={showSnake} onClose={closeSnake} />}
+      {showSnake && (
+        <Snake isActive={showSnake} onClose={closeSnake} mode={snakeMode} />
+      )}
       {showMemory && <MemoryGame isActive={showMemory} onClose={closeMemory} />}
     </>
   );
